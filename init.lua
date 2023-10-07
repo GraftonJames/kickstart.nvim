@@ -92,7 +92,12 @@ require('lazy').setup({
       'folke/neodev.nvim',
     },
   },
-
+  {
+    'rcarriga/nvim-dap-ui',
+    dependencies = {
+      'mfussenegger/nvim-dap'
+    }
+  },
   {
     -- Autocompletion
     'hrsh7th/nvim-cmp',
@@ -103,6 +108,18 @@ require('lazy').setup({
 
       -- Adds LSP completion capabilities
       'hrsh7th/cmp-nvim-lsp',
+      'simrat39/rust-tools.nvim',
+      'hrsh7th/cmp-nvim-lua',
+      'hrsh7th/nvim-cmp',
+      'hrsh7th/cmp-buffer',
+      'hrsh7th/cmp-nvim-lua',
+    	'hrsh7th/cmp-nvim-lsp',
+    	'hrsh7th/cmp-nvim-lsp-signature-help',
+    	'hrsh7th/cmp-path',
+    	'neovim/nvim-lspconfig',
+	    'L3MON4D3/LuaSnip',
+    	'saadparwaiz1/cmp_luasnip',
+	    'simrat39/rust-tools.nvim',
 
       -- Adds a number of user-friendly snippets
       'rafamadriz/friendly-snippets',
@@ -226,11 +243,16 @@ require('lazy').setup({
 -- See `:help vim.o`
 -- NOTE: You can change these options as you wish!
 
+vim.bo.tabstop = 16
+vim.bo.shiftwidth = 16
+vim.bo.expandtab = false
+
 -- Set highlight on search
 vim.o.hlsearch = false
 
 -- Make line numbers default
 vim.wo.number = true
+vim.wo.relativenumber = true
 
 -- Enable mouse mode
 vim.o.mouse = 'a'
@@ -328,7 +350,7 @@ vim.defer_fn(function()
     ensure_installed = { 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'tsx', 'javascript', 'typescript', 'vimdoc', 'vim' },
   
     -- Autoinstall languages that are not installed. Defaults to false (but you can change for yourself!)
-    auto_install = false,
+    auto_install = true,
   
     highlight = { enable = true },
     indent = { enable = true },
@@ -544,8 +566,57 @@ cmp.setup {
   sources = {
     { name = 'nvim_lsp' },
     { name = 'luasnip' },
+    { name = 'nvim_lsp_signature_help'},
+    { name = 'nvim_lua'},
+    { name = 'path' }
+
   },
 }
 
+local lsp_attach = function(client, buf)
+	-- Example maps, set your own with vim.api.nvim_buf_set_keymap(buf, "n", <lhs>, <rhs>, { desc = <desc> })
+	-- or a plugin like which-key.nvim
+	-- <lhs>        <rhs>                        <desc>
+	-- "K"          vim.lsp.buf.hover            "Hover Info"
+	-- "<leader>qf" vim.diagnostic.setqflist     "Quickfix Diagnostics"
+	-- "[d"         vim.diagnostic.goto_prev     "Previous Diagnostic"
+	-- "]d"         vim.diagnostic.goto_next     "Next Diagnostic"
+	-- "<leader>e"  vim.diagnostic.open_float    "Explain Diagnostic"
+	-- "<leader>ca" vim.lsp.buf.code_action      "Code Action"
+	-- "<leader>cr" vim.lsp.buf.rename           "Rename Symbol"
+	-- "<leader>fs" vim.lsp.buf.document_symbol  "Document Symbols"
+	-- "<leader>fS" vim.lsp.buf.workspace_symbol "Workspace Symbols"
+	-- "<leader>gq" vim.lsp.buf.formatting_sync  "Format File"
+
+	vim.api.nvim_buf_set_option(buf, "formatexpr", "v:lua.vim.lsp.formatexpr()")
+	vim.api.nvim_buf_set_option(buf, "omnifunc", "v:lua.vim.lsp.omnifunc")
+	vim.api.nvim_buf_set_option(buf, "tagfunc", "v:lua.vim.lsp.tagfunc")
+end
+
+require ("rust-tools").setup({
+  server = {
+    capabilities = capabilities,
+    on_attach = lsp_attach,
+  }
+})
+
+local ls = require("luasnip")
+vim.keymap.set({ "i", "s" }, "<C-k>", function()
+	if ls.expand_or_jumpable() then
+		ls.expand_or_jump()
+	end
+end, { silent = true })
+
+vim.keymap.set({ "i", "s" }, "<C-j>", function()
+	if ls.jumpable(-1) then
+		ls.jump(-1)
+	end
+end, { silent = true })
+
+vim.keymap.set("i", "<C-l>", function()
+	if ls.choice_active() then
+		ls.change_choice(1)
+	end
+end)
+
 -- The line beneath this is called `modeline`. See `:help modeline`
--- vim: ts=2 sts=2 sw=2 et
